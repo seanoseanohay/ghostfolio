@@ -17,6 +17,14 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
+      "@ghostfolio/agent": ["libs/agent/src/index.ts"],
+      "@ghostfolio/agent/*": ["libs/agent/src/*"],
+      "@langchain/langgraph/prebuilt": [
+        "node_modules/@langchain/langgraph/dist/prebuilt/index"
+      ],
+      "@langchain/langgraph-checkpoint-redis": [
+        "node_modules/@langchain/langgraph-checkpoint-redis/dist/index"
+      ],
       "@ghostfolio/api/*": ["apps/api/src/*"],
       "@ghostfolio/client/*": ["apps/client/src/app/*"],
       "@ghostfolio/common/*": ["libs/common/src/lib/*"],

@@ -120,4 +120,17 @@ function logLogo() {
   Logger.log('');
 }
 
+process.on('uncaughtException', (error) => {
+  console.error('[process] Uncaught Exception — server kept alive:', error);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error(
+    '[process] Unhandled Rejection at:',
+    promise,
+    'reason:',
+    reason
+  );
+});
+
 bootstrap();

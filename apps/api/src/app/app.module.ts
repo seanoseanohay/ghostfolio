@@ -1,3 +1,4 @@
+import { AgentModule } from '@ghostfolio/api/agent/agent.module';
 import { EventsModule } from '@ghostfolio/api/events/events.module';
 import { HtmlTemplateMiddleware } from '@ghostfolio/api/middlewares/html-template.middleware';
 import { ConfigurationModule } from '@ghostfolio/api/services/configuration/configuration.module';
@@ -61,6 +62,7 @@ import { UserModule } from './user/user.module';
   imports: [
     AdminModule,
     AccessModule,
+    AgentModule,
     AccountModule,
     AiModule,
     ApiKeysModule,

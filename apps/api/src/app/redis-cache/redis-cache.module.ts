@@ -18,12 +18,16 @@ import { RedisCacheService } from './redis-cache.service';
           configurationService.get('REDIS_PASSWORD')
         );
 
+        const keyvStore = createKeyv(
+          `redis://${redisPassword ? `:${redisPassword}` : ''}@${configurationService.get('REDIS_HOST')}:${configurationService.get('REDIS_PORT')}/${configurationService.get('REDIS_DB')}`
+        );
+
+        keyvStore.on('error', (err) =>
+          console.error('[RedisCacheModule] Keyv Redis error:', err)
+        );
+
         return {
-          stores: [
-            createKeyv(
-              `redis://${redisPassword ? `:${redisPassword}` : ''}@${configurationService.get('REDIS_HOST')}:${configurationService.get('REDIS_PORT')}/${configurationService.get('REDIS_DB')}`
-            )
-          ],
+          stores: [keyvStore],
           ttl: configurationService.get('CACHE_TTL')
         };
       }

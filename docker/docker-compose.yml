@@ -50,10 +50,9 @@ services:
       - postgres:/var/lib/postgresql/data
 
   redis:
-    image: docker.io/library/redis:alpine
+    image: docker.io/redis/redis-stack-server:latest
     container_name: gf-redis
     restart: unless-stopped
-    user: '999:1000'
     cap_drop:
       - ALL
     security_opt:
@@ -63,7 +62,7 @@ services:
     command:
       - /bin/sh
       - -c
-      - redis-server --requirepass "$${REDIS_PASSWORD:?REDIS_PASSWORD variable is not set}"
+      - redis-stack-server --requirepass "$${REDIS_PASSWORD:?REDIS_PASSWORD variable is not set}"
     healthcheck:
       test:
         ['CMD-SHELL', 'redis-cli --pass "$${REDIS_PASSWORD}" ping | grep PONG']
