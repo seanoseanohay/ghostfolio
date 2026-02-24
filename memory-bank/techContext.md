@@ -63,3 +63,11 @@ Note: Path aliases for LangGraph subpaths are required because apps/api uses `mo
 ## Module Resolution Issue
 
 The `apps/api/tsconfig.app.json` uses `moduleResolution: node10` which doesn't support package exports subpaths. Fixed by adding manual path aliases in `tsconfig.base.json` for `@langchain/langgraph/prebuilt` and `@langchain/langgraph-checkpoint-redis`.
+
+## Production Deployment (Railway)
+
+- **Live URL:** https://ghostfolio-production-1e9f.up.railway.app
+- **Services:** API (Dockerfile), PostgreSQL (Railway addon), Redis Stack (custom `redis/redis-stack-server:latest` image)
+- **Redis Stack config:** Must use `redis-stack-server` binary in the docker `command:` (NOT `redis-server`) to load JSON + Search modules required by `@langchain/langgraph-checkpoint-redis`
+- **Dockerfile production fix:** Nx `generatePackageJson: true` misses LangChain transitive deps (e.g. `decamelize`) because tsconfig path aliases cause webpack to resolve them as local files rather than node_module externals. Fix: copy root `package.json` into `dist/apps/api/` BEFORE running `npm install --omit=dev --ignore-scripts`, then run `database:generate-typings` explicitly after copying prisma schema.
+- **railway.toml:** Sets `healthcheckPath = "/api/v1/health"`, `healthcheckTimeout = 300`

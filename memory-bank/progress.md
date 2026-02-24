@@ -1,6 +1,6 @@
 # Progress
 
-## What Works (Phase 1 Complete)
+## What Works (Phase 1 Complete + Deployed)
 
 - ✅ AgentModule registered in AppModule
 - ✅ POST /api/v1/agent/chat endpoint (JWT-protected)
@@ -11,6 +11,10 @@
 - ✅ traceSanitizer() for PII redaction in traces
 - ✅ TypeScript compiles cleanly (0 errors)
 - ✅ Memory bank documentation complete
+- ✅ Deployed to Railway — live at https://ghostfolio-production-1e9f.up.railway.app
+- ✅ Redis Stack running on Railway (redis-stack-server with JSON + Search modules)
+- ✅ PostgreSQL running on Railway with all 107 migrations applied
+- ✅ Production Dockerfile fixed (root package.json + --omit=dev --ignore-scripts)
 
 ## What's Left to Build
 
@@ -30,9 +34,9 @@
 
 ### Phase 4 — Infrastructure
 
-- [ ] Docker Compose env var updates
-- [ ] Railway deployment
-- [ ] ANTHROPIC_API_KEY in .env
+- [x] ~~Docker Compose env var updates~~ done
+- [x] ~~Railway deployment~~ live
+- [x] ~~ANTHROPIC_API_KEY in .env~~ done
 
 ### Phase 5 — Optional
 
@@ -41,9 +45,9 @@
 ## Known Issues / Limitations
 
 1. `baseCurrency` in portfolio_analysis is hardcoded to 'USD' — should come from user settings
-2. RedisSaver requires Redis Search module (RediSearch) for checkpoint index creation — may need to verify Redis instance supports it; if not, fall back to MemorySaver for development
-3. The Redis checkpointer singleton will not reconnect if Redis disconnects mid-session
-4. No unit tests written yet
+2. Redis checkpointer singleton will not reconnect if Redis disconnects mid-session
+3. No unit tests written yet
+4. Agent UI only accessible via API (no Angular frontend yet)
 
 ## PRD Compliance Status
 
@@ -55,7 +59,7 @@
 | Conversation memory    | ✅ Redis RedisSaver              |
 | ≥1 domain verification | ✅ 4-check verifier              |
 | ≥5 test cases          | ⏳ pending                       |
-| Public deployment      | ⏳ pending                       |
+| Public deployment      | ✅ Railway live                  |
 | Confidence score       | ✅ implemented                   |
 | Citations              | ✅ basic (tool source)           |
 | Trace redaction        | ✅ traceSanitizer                |

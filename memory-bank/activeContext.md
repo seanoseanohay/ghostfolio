@@ -2,9 +2,17 @@
 
 ## Current Work Focus
 
-Phase 1 complete: AgentModule skeleton + portfolio_analysis tool implemented.
+Phase 1 complete and deployed. Agent is live on Railway. Next focus: Phase 2 tools.
 
-## What Was Just Implemented (2026-02-23)
+## Deployment Status (2026-02-24)
+
+- **Live URL:** https://ghostfolio-production-1e9f.up.railway.app
+- **API endpoint:** POST /api/v1/agent/chat
+- **Railway services:** API (from Dockerfile), PostgreSQL (addon), Redis Stack (custom Docker image)
+- **Redis Stack fix:** Must use `redis-stack-server` binary in command (not `redis-server`) to load JSON + Search modules
+- **Dockerfile fix:** Use root `package.json` + `npm install --omit=dev --ignore-scripts` instead of Nx-generated package.json, then run `database:generate-typings` explicitly after copying prisma schema
+
+## What Was Implemented (2026-02-23 to 2026-02-24)
 
 1. **Packages installed:** @langchain/anthropic, @langchain/langgraph v1.1.5, @langchain/core, langsmith, zod, ioredis, @langchain/langgraph-checkpoint-redis
 2. **libs/agent/src/schemas/portfolio-analysis.schema.ts** — Zod input/output schemas
@@ -15,11 +23,16 @@ Phase 1 complete: AgentModule skeleton + portfolio_analysis tool implemented.
 7. **libs/agent/src/index.ts** — barrel export
 8. **apps/api/src/agent/dto/chat.dto.ts** — ChatRequestDto
 9. **apps/api/src/agent/agent.service.ts** — Orchestrates runAgentGraph()
-10. **apps/api/src/agent/agent.controller.ts** — POST /agent/chat with JWT guard
+10. **apps/api/src/agent/agent.controller.ts** — POST /agent/chat with JWT guard + error detail in 500 responses
 11. **apps/api/src/agent/agent.module.ts** — AgentModule importing PortfolioModule
 12. **apps/api/src/app/app.module.ts** — Added AgentModule import
-13. **tsconfig.base.json** — Added @ghostfolio/agent and LangGraph subpath aliases
-14. **memory-bank/** — All 6 core files created
+13. **apps/api/src/app/redis-cache/redis-cache.module.ts** — Added Keyv error handler to prevent process crash
+14. **apps/api/src/main.ts** — Added process.on('uncaughtException') + process.on('unhandledRejection') handlers
+15. **tsconfig.base.json** — Added @ghostfolio/agent and LangGraph subpath aliases
+16. **docker/docker-compose.yml** — Switched redis image to redis-stack-server; command uses redis-stack-server binary
+17. **Dockerfile** — Fixed production install to use root package.json with --omit=dev --ignore-scripts
+18. **railway.toml** — Railway deployment config with health check on /api/v1/health
+19. **memory-bank/** — All 6 core files created and maintained
 
 ## TypeScript Status
 
@@ -32,6 +45,8 @@ Phase 1 complete: AgentModule skeleton + portfolio_analysis tool implemented.
 - Added path aliases for `@langchain/langgraph/prebuilt` and `@langchain/langgraph-checkpoint-redis` to fix node10 moduleResolution incompatibility
 - RedisSaver initialized as a module-level singleton (not per-request) to avoid connection overhead
 - `tools: tools as any` passed to createReactAgent to avoid deep generic inference
+- Process-level error handlers added to prevent silent crashes from unhandled Redis EventEmitter errors
+- Controller wraps agent call in try/catch and returns `detail` in 500 responses for debuggability
 
 ## Next Steps (Phase 2)
 
@@ -41,9 +56,8 @@ Phase 1 complete: AgentModule skeleton + portfolio_analysis tool implemented.
 4. Implement LangSmith tracing with traceSanitizer integration
 5. Add cost tracking (token usage logging)
 6. Write evaluation dataset (50+ LangSmith cases)
-7. Docker Compose env var updates (ANTHROPIC_API_KEY, LANGSMITH_API_KEY, etc.)
-8. CI evaluation gating
-9. Optional: Angular chat UI component
+7. CI evaluation gating
+8. Optional: Angular chat UI component
 
 ## Active Decisions & Considerations
 
