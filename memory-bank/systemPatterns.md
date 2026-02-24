@@ -20,11 +20,11 @@ AgentService (apps/api/src/agent/agent.service.ts)
 runAgentGraph() (libs/agent/src/graph/agent.graph.ts)
   Creates RedisSaver checkpointer (singleton, shared across requests)
   Creates ChatAnthropic (claude-sonnet-4-5)
-  Creates tool instances bound to (portfolioService, userId)
+  Creates 5 tool instances bound to (service, userId) via closure
   Calls createReactAgent({ llm, tools, checkpointSaver })
   Invokes agent with thread_id config
   Parses tool calls and tool outputs from message history
-  Runs verifiers on tool outputs
+  Runs verifiers on portfolio_analysis tool outputs
   Calculates confidence score
   Returns AgentRunResult
     │
@@ -39,6 +39,17 @@ HTTP Response: { message, toolCalls, citations, confidence, warnings, newConvers
 - Tool execution has 3× retry with exponential backoff (500ms × attempt)
 - Tool returns JSON string (LangChain tool contract)
 - Tool schemas use Zod, stored in `libs/agent/src/schemas/`
+- Mocked tools (tax_estimate, compliance_check) take no services — pure logic + disclaimers
+
+## Registered Tools (5 total)
+
+| Tool                     | Type      | Service             | Key Method                              |
+| ------------------------ | --------- | ------------------- | --------------------------------------- |
+| `portfolio_analysis`     | Real data | PortfolioService    | getDetails() + getPerformance()         |
+| `market_data`            | Real data | DataProviderService | getQuotes() + getHistorical()           |
+| `transaction_categorize` | Real data | OrderService        | getOrders()                             |
+| `tax_estimate`           | Mocked    | —                   | US-only, with disclaimer                |
+| `compliance_check`       | Mocked    | —                   | 4 check types, US-only, with disclaimer |
 
 ## Verifier Pattern
 
@@ -74,8 +85,10 @@ Confidence < 0.8 → adds warning to response.
 AppModule
   └── AgentModule
         ├── AgentController (POST /agent/chat)
-        ├── AgentService
-        └── imports: [PortfolioModule]
+        ├── AgentService (injects PortfolioService, OrderService, DataProviderService)
+        └── imports: [DataProviderModule, OrderModule, PortfolioModule]
+              ├── DataProviderModule exports: [DataProviderService, ManualService, YahooFinanceService]
+              ├── OrderModule exports: [OrderService]
               └── PortfolioModule exports: [PortfolioService]
 ```
 

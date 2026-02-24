@@ -22,6 +22,23 @@ import {
   VerificationResult,
   verifyPortfolioAnalysis
 } from '../verifiers/portfolio-analysis.verifier';
+import { traceSanitizer } from '../verifiers/trace-sanitizer';
+
+// Map Ghostfolio env vars → LangChain SDK env vars at module load
+// LangChain reads LANGCHAIN_TRACING_V2 + LANGCHAIN_API_KEY + LANGCHAIN_PROJECT
+if (process.env.LANGSMITH_TRACING_ENABLED === 'true') {
+  process.env.LANGCHAIN_TRACING_V2 = 'true';
+  if (process.env.LANGSMITH_API_KEY && !process.env.LANGCHAIN_API_KEY) {
+    process.env.LANGCHAIN_API_KEY = process.env.LANGSMITH_API_KEY;
+  }
+  if (!process.env.LANGCHAIN_PROJECT) {
+    process.env.LANGCHAIN_PROJECT = 'ghostfolio-agent';
+  }
+}
+
+// Claude Sonnet pricing (USD per 1M tokens) — update if pricing changes
+const CLAUDE_INPUT_COST_PER_M = 3.0;
+const CLAUDE_OUTPUT_COST_PER_M = 15.0;
 
 export interface AgentGraphConfig {
   redisUrl: string;
@@ -43,12 +60,20 @@ export interface CitationRecord {
   toolCallId?: string;
 }
 
+export interface TokenUsage {
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  estimatedCostUsd: number;
+}
+
 export interface AgentRunResult {
   message: string;
   toolCalls: ToolCallRecord[];
   citations: CitationRecord[];
   confidence: number;
   warnings: string[];
+  tokenUsage: TokenUsage;
   newConversationId?: string;
 }
 
@@ -189,7 +214,15 @@ export async function runAgentGraph(
 
   const agentConfig = {
     configurable: { thread_id: threadId },
-    callbacks: config.langsmithTracingEnabled ? undefined : []
+    callbacks: config.langsmithTracingEnabled ? undefined : [],
+    // Sanitized metadata sent to LangSmith — no raw PII
+    metadata: {
+      threadId: (traceSanitizer({ threadId }) as Record<string, unknown>)
+        .threadId,
+      toolCount: tools.length
+    },
+    runName: 'ghostfolio-agent-chat',
+    tags: ['ghostfolio', 'finance-agent', 'v1']
   };
 
   const result = await agent.invoke({ messages }, agentConfig);
@@ -268,11 +301,45 @@ export async function runAgentGraph(
     );
   }
 
+  // Extract token usage from AI messages (LangChain usage_metadata)
+  let totalInputTokens = 0;
+  let totalOutputTokens = 0;
+
+  for (const message of result.messages) {
+    const msgType = (message as { _getType?: () => string })._getType?.();
+
+    if (msgType === 'ai') {
+      const usageMeta = (
+        message as {
+          usage_metadata?: { input_tokens?: number; output_tokens?: number };
+        }
+      ).usage_metadata;
+
+      if (usageMeta) {
+        totalInputTokens += usageMeta.input_tokens ?? 0;
+        totalOutputTokens += usageMeta.output_tokens ?? 0;
+      }
+    }
+  }
+
+  const totalTokens = totalInputTokens + totalOutputTokens;
+  const estimatedCostUsd =
+    (totalInputTokens / 1_000_000) * CLAUDE_INPUT_COST_PER_M +
+    (totalOutputTokens / 1_000_000) * CLAUDE_OUTPUT_COST_PER_M;
+
+  const tokenUsage: TokenUsage = {
+    inputTokens: totalInputTokens,
+    outputTokens: totalOutputTokens,
+    totalTokens,
+    estimatedCostUsd: Math.round(estimatedCostUsd * 1_000_000) / 1_000_000
+  };
+
   return {
     message: responseText,
     toolCalls: toolCallsRecorded,
     citations,
     confidence,
-    warnings: [...new Set(warnings)]
+    warnings: [...new Set(warnings)],
+    tokenUsage
   };
 }

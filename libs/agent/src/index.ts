@@ -1,3 +1,4 @@
+export * from './evals/evaluators';
 export * from './graph/agent.graph';
 export * from './schemas/compliance-check.schema';
 export * from './schemas/market-data.schema';

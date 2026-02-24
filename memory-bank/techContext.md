@@ -52,6 +52,22 @@ Note: Path aliases for LangGraph subpaths are required because apps/api uses `mo
 
 - `netPerformance, netPerformancePercentage, totalInvestment, currentValueInBaseCurrency`
 
+### DataProviderService (apps/api/src/services/data-provider/data-provider.service.ts)
+
+- `getQuotes({ items: AssetProfileIdentifier[], requestTimeout?, useCache?, user? }): Promise<{ [symbol: string]: DataProviderResponse }>`
+- `getHistorical(items: AssetProfileIdentifier[], granularity: 'day'|'month', from: Date, to: Date): Promise<{ [symbol: string]: { [date: string]: DataProviderHistoricalResponse } }>`
+- `AssetProfileIdentifier = { dataSource: DataSource, symbol: string }` — DataSource from `@prisma/client`
+- `DataProviderResponse = { currency, dataSource, marketPrice, marketState }`
+- Exported from `DataProviderModule`; that module has a complex provider factory — always import the full module, never just the service
+
+### OrderService (apps/api/src/app/order/order.service.ts)
+
+- `getOrders({ endDate?, filters?, includeDrafts?, skip?, sortColumn?, sortDirection?, startDate?, take?, types?, userCurrency, userId, withExcludedAccountsAndActivities? }): Promise<ActivitiesResponse>`
+- `ActivitiesResponse = { activities: Activity[], count: number }`
+- `Activity extends Order` with extra fields: `account, feeInBaseCurrency, feeInAssetProfileCurrency, SymbolProfile, value, valueInBaseCurrency`
+- `userCurrency` is required — hardcoded to 'USD' in agent tool (known limitation)
+- Exported from `OrderModule`
+
 ## Environment Variables (agent-specific)
 
 - `ANTHROPIC_API_KEY` — Claude API key

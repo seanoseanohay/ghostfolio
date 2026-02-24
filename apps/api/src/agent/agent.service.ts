@@ -64,6 +64,10 @@ export class AgentService {
         }
       );
 
+      this.logger.log(
+        `Agent response — tokens: ${result.tokenUsage.totalTokens} (in: ${result.tokenUsage.inputTokens}, out: ${result.tokenUsage.outputTokens}), cost: $${result.tokenUsage.estimatedCostUsd.toFixed(6)}, confidence: ${(result.confidence * 100).toFixed(0)}%`
+      );
+
       return {
         ...result,
         newConversationId: resolvedConversationId

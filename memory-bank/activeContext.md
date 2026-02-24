@@ -2,7 +2,7 @@
 
 ## Current Work Focus
 
-Phase 2 complete. All 5 tools implemented and registered. Next focus: Phase 3 (LangSmith tracing, cost tracking, eval dataset, CI gating).
+Phases 1–3 complete. MVP hard gate requirements all satisfied. Next: deploy Phase 3 changes to Railway and run live evals.
 
 ## Deployment Status (2026-02-24)
 
@@ -63,17 +63,28 @@ Phase 2 complete. All 5 tools implemented and registered. Next focus: Phase 3 (L
 - Process-level error handlers added to prevent silent crashes from unhandled Redis EventEmitter errors
 - Controller wraps agent call in try/catch and returns `detail` in 500 responses for debuggability
 
-## Next Steps (Phase 3)
+## Next Steps
 
-1. Implement LangSmith tracing with traceSanitizer integration
-2. Add cost tracking (token usage logging)
-3. Write evaluation dataset (50+ LangSmith cases)
-4. CI evaluation gating
-5. Optional: Angular chat UI component
+1. Deploy Phase 3 changes to Railway (git push → Railway auto-deploys)
+2. Set `LANGSMITH_API_KEY` and `LANGSMITH_TRACING_ENABLED=true` in Railway env vars
+3. Run live evals: `npm run agent:eval:live -- --endpoint https://ghostfolio-production-1e9f.up.railway.app --token <JWT>`
+4. Optional: Angular chat UI component
+
+## Live Verification Result (2026-02-24)
+
+Tested against Railway production endpoint. Query: "What stocks do I own and what is the current price of AAPL?"
+
+- Agent autonomously called `portfolio_analysis` AND `market_data` in a single response ✅
+- `toolCalls` array returned with both tools marked `success: true` ✅
+- `confidence: 1` ✅
+- `newConversationId` returned (Redis memory working) ✅
+- Portfolio empty (expected — test account has no holdings) ✅
+- AAPL price not returned — DataProviderService on Railway returned no quote data (Known Issue #5 — likely missing DATA_SOURCES env var or Yahoo Finance not configured)
 
 ## Active Decisions & Considerations
 
 - PortfolioService is used via PortfolioModule export, not direct injection — preserves module encapsulation
 - AgentService is singleton-scoped (no @Inject(REQUEST)) — userId passed explicitly from controller
-- baseCurrency hardcoded as 'USD' in portfolio_analysis tool — should be derived from user settings in Phase 2
+- baseCurrency and userCurrency hardcoded as 'USD' in tools — should be derived from user settings
 - Redis checkpointer uses a global singleton to avoid re-connecting on every request
+- DataProviderModule must always be imported as a whole module (never just DataProviderService) because it uses a complex `useFactory` provider pattern for `DataProviderInterfaces`
