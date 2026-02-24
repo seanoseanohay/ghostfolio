@@ -23,6 +23,7 @@
 - ✅ Redis Stack running on Railway (redis-stack-server with JSON + Search modules)
 - ✅ PostgreSQL running on Railway with all 107 migrations applied
 - ✅ Production Dockerfile fixed (root package.json + --omit=dev --ignore-scripts)
+- ✅ LangSmith tracing live (LANGSMITH_API_KEY + LANGSMITH_TRACING_ENABLED configured on Railway)
 
 ## What's Left to Build
 
@@ -52,7 +53,7 @@
 2. Redis checkpointer singleton will not reconnect if Redis disconnects mid-session
 3. No unit tests written yet
 4. ~~Agent UI only accessible via API~~ — Angular chat UI now at `/ai-chat`
-5. market_data tool returned no quote for AAPL in live test — DataProviderService on Railway likely missing data source config (DATA_SOURCES env var or Yahoo Finance connectivity); not a code bug
+5. market_data tool returned no quote for AAPL — Fix: ensure Railway has DATA_SOURCES including YAHOO (see DEPLOYMENT.md). market_data tool now passes 15s requestTimeout. Verify env vars in Railway dashboard.
 
 ## PRD Compliance Status
 
@@ -68,5 +69,5 @@
 | Confidence score       | ✅ implemented                                                                                      |
 | Citations              | ✅ basic (tool source)                                                                              |
 | Trace redaction        | ✅ traceSanitizer                                                                                   |
-| LangSmith tracing      | ⏳ wired but not traced                                                                             |
-| Cost tracking          | ⏳ pending                                                                                          |
+| LangSmith tracing      | ✅ live                                                                                             |
+| Cost tracking          | ✅ implemented                                                                                      |

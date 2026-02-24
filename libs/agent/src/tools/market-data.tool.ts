@@ -51,7 +51,10 @@ async function fetchMarketData(
     symbol
   }));
 
-  const quotesRaw = await dataProviderService.getQuotes({ items });
+  const quotesRaw = await dataProviderService.getQuotes({
+    items,
+    requestTimeout: 15000
+  });
 
   const quotes = input.symbols.map((symbol) => {
     const q = quotesRaw[symbol];

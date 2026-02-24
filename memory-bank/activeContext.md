@@ -2,12 +2,13 @@
 
 ## Current Work Focus
 
-Phases 1–5 complete. All MVP hard gate requirements satisfied. Phase 5 Angular chat GUI shipped. Next: deploy to Railway, run live evals, optionally set `LANGSMITH_API_KEY` in Railway env vars.
+Phases 1–5 complete. LangSmith tracing live. Focus: production polish — fix market data on Railway (DATA_SOURCES), baseCurrency from user settings, AI chat UI theming.
 
 ## Deployment Status (2026-02-24)
 
 - **Live URL:** https://ghostfolio-production-1e9f.up.railway.app
 - **API endpoint:** POST /api/v1/agent/chat
+- **LangSmith tracing:** Live (LANGSMITH_API_KEY + LANGSMITH_TRACING_ENABLED on Railway)
 - **Railway services:** API (from Dockerfile), PostgreSQL (addon), Redis Stack (custom Docker image)
 - **Redis Stack fix:** Must use `redis-stack-server` binary in command (not `redis-server`) to load JSON + Search modules
 - **Dockerfile fix:** Use root `package.json` + `npm install --omit=dev --ignore-scripts` instead of Nx-generated package.json, then run `database:generate-typings` explicitly after copying prisma schema
@@ -81,10 +82,10 @@ Phases 1–5 complete. All MVP hard gate requirements satisfied. Phase 5 Angular
 
 ## Next Steps
 
-1. Deploy to Railway (git push → Railway auto-deploys; Prisma will run new migration via `prisma migrate deploy` on startup)
-2. Set `LANGSMITH_API_KEY` and `LANGSMITH_TRACING_ENABLED=true` in Railway env vars (if tracing desired)
-3. Run live evals: `npm run agent:eval:live -- --endpoint https://ghostfolio-production-1e9f.up.railway.app --token <JWT>`
-4. (Optional) Add mobile bottom sheet for conversation history on small screens
+1. Fix market data on Railway — configure DATA_SOURCES (include YAHOO) so market_data returns quotes
+2. baseCurrency from user settings — remove hardcoded 'USD' in portfolio_analysis + transaction_categorize
+3. AI chat UI theming — use Ghostfolio theme variables for dark/light mode
+4. Run live evals: `npm run agent:eval:live -- --endpoint https://ghostfolio-production-1e9f.up.railway.app --token <JWT>`
 
 ## Live Verification Result (2026-02-24)
 

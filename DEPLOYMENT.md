@@ -90,6 +90,17 @@ curl -X POST https://ghostfolio-production-1e9f.up.railway.app/api/v1/agent/chat
 | `LANGSMITH_TRACING_ENABLED` | `true` or `false`                        |
 | `AGENT_MEMORY_TTL_DAYS`     | `7` (days to retain conversation memory) |
 
+### Market data (agent `market_data` tool)
+
+For the agent to return stock prices (e.g. AAPL), ensure:
+
+| Variable          | Value                                           | Notes                                                                |
+| ----------------- | ----------------------------------------------- | -------------------------------------------------------------------- |
+| `DATA_SOURCES`    | `["COINGECKO","MANUAL","YAHOO"]` or leave unset | Must include `YAHOO` for stocks. Default is correct if unset.        |
+| `REQUEST_TIMEOUT` | `10000` or `15000` (milliseconds)               | Optional. Default 3000ms may be too short for Yahoo from datacenter. |
+
+**If `DATA_SOURCES` is set in Railway**, ensure it includes `YAHOO`. Example valid value: `["COINGECKO","MANUAL","YAHOO"]`.
+
 ### Redis Stack service environment variable
 
 | Variable     | Value                               |
