@@ -20,10 +20,10 @@
 
 ### Phase 2 — Remaining Tools
 
-- [ ] market_data tool (reuse DataProviderService/MarketDataService)
-- [ ] transaction_categorize tool (reuse OrderService)
-- [ ] tax_estimate tool (mocked, with disclaimer)
-- [ ] compliance_check tool (mocked, US-only, with disclaimer)
+- [x] ~~market_data tool~~ done — wraps DataProviderService.getQuotes() + getHistorical()
+- [x] ~~transaction_categorize tool~~ done — wraps OrderService.getOrders()
+- [x] ~~tax_estimate tool~~ done — mocked, US-only, with disclaimer
+- [x] ~~compliance_check tool~~ done — mocked, US-only, with disclaimer
 
 ### Phase 3 — Observability & Evals
 
@@ -51,17 +51,17 @@
 
 ## PRD Compliance Status
 
-| Requirement            | Status                           |
-| ---------------------- | -------------------------------- |
-| Natural language query | ✅ via LangGraph                 |
-| ≥3 functional tools    | 🔄 1/3 (portfolio_analysis only) |
-| Structured tool calls  | ✅ Zod schemas                   |
-| Conversation memory    | ✅ Redis RedisSaver              |
-| ≥1 domain verification | ✅ 4-check verifier              |
-| ≥5 test cases          | ⏳ pending                       |
-| Public deployment      | ✅ Railway live                  |
-| Confidence score       | ✅ implemented                   |
-| Citations              | ✅ basic (tool source)           |
-| Trace redaction        | ✅ traceSanitizer                |
-| LangSmith tracing      | ⏳ wired but not traced          |
-| Cost tracking          | ⏳ pending                       |
+| Requirement            | Status                                                                                              |
+| ---------------------- | --------------------------------------------------------------------------------------------------- |
+| Natural language query | ✅ via LangGraph                                                                                    |
+| ≥3 functional tools    | ✅ 5 tools: portfolio_analysis, market_data, transaction_categorize, tax_estimate, compliance_check |
+| Structured tool calls  | ✅ Zod schemas                                                                                      |
+| Conversation memory    | ✅ Redis RedisSaver                                                                                 |
+| ≥1 domain verification | ✅ 4-check verifier                                                                                 |
+| ≥5 test cases          | ⏳ pending                                                                                          |
+| Public deployment      | ✅ Railway live                                                                                     |
+| Confidence score       | ✅ implemented                                                                                      |
+| Citations              | ✅ basic (tool source)                                                                              |
+| Trace redaction        | ✅ traceSanitizer                                                                                   |
+| LangSmith tracing      | ⏳ wired but not traced                                                                             |
+| Cost tracking          | ⏳ pending                                                                                          |

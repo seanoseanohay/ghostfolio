@@ -1,5 +1,7 @@
 import { AgentRunResult, runAgentGraph } from '@ghostfolio/agent';
+import { OrderService } from '@ghostfolio/api/app/order/order.service';
 import { PortfolioService } from '@ghostfolio/api/app/portfolio/portfolio.service';
+import { DataProviderService } from '@ghostfolio/api/services/data-provider/data-provider.service';
 
 import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
@@ -8,7 +10,11 @@ import { randomUUID } from 'node:crypto';
 export class AgentService {
   private readonly logger = new Logger(AgentService.name);
 
-  public constructor(private readonly portfolioService: PortfolioService) {}
+  public constructor(
+    private readonly dataProviderService: DataProviderService,
+    private readonly orderService: OrderService,
+    private readonly portfolioService: PortfolioService
+  ) {}
 
   public async chat({
     conversationId,
@@ -48,6 +54,8 @@ export class AgentService {
         query,
         threadId,
         this.portfolioService,
+        this.orderService,
+        this.dataProviderService,
         userId,
         {
           redisUrl,

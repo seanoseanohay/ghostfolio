@@ -1,4 +1,6 @@
+import { OrderService } from '@ghostfolio/api/app/order/order.service';
 import { PortfolioService } from '@ghostfolio/api/app/portfolio/portfolio.service';
+import { DataProviderService } from '@ghostfolio/api/services/data-provider/data-provider.service';
 
 import { ChatAnthropic } from '@langchain/anthropic';
 import { BaseMessage, HumanMessage } from '@langchain/core/messages';
@@ -11,7 +13,11 @@ import {
   PortfolioAnalysisOutput,
   PortfolioAnalysisOutputSchema
 } from '../schemas/portfolio-analysis.schema';
+import { createComplianceCheckTool } from '../tools/compliance-check.tool';
+import { createMarketDataTool } from '../tools/market-data.tool';
 import { createPortfolioAnalysisTool } from '../tools/portfolio-analysis.tool';
+import { createTaxEstimateTool } from '../tools/tax-estimate.tool';
+import { createTransactionCategorizeTool } from '../tools/transaction-categorize.tool';
 import {
   VerificationResult,
   verifyPortfolioAnalysis
@@ -101,6 +107,10 @@ Guidelines:
 
 Available tools:
 - portfolio_analysis: Retrieve current portfolio holdings, allocation, and performance metrics
+- market_data: Fetch current and historical market prices for specific ticker symbols
+- transaction_categorize: Retrieve and categorize the user's transaction history (buys, sells, dividends, fees)
+- tax_estimate: Provide a rough US tax estimate for a given year (mocked, informational only)
+- compliance_check: Run US regulatory and best-practice compliance checks (informational only)
 
 Always use tools to ground your answers in real data rather than making assumptions.`;
 }
@@ -134,6 +144,8 @@ export async function runAgentGraph(
   query: string,
   threadId: string,
   portfolioService: PortfolioService,
+  orderService: OrderService,
+  dataProviderService: DataProviderService,
   userId: string,
   config: AgentGraphConfig
 ): Promise<AgentRunResult> {
@@ -149,7 +161,18 @@ export async function runAgentGraph(
   });
 
   const portfolioTool = createPortfolioAnalysisTool(portfolioService, userId);
-  const tools: DynamicStructuredTool[] = [portfolioTool];
+  const marketDataTool = createMarketDataTool(dataProviderService);
+  const transactionTool = createTransactionCategorizeTool(orderService, userId);
+  const taxTool = createTaxEstimateTool();
+  const complianceTool = createComplianceCheckTool();
+
+  const tools: DynamicStructuredTool[] = [
+    portfolioTool,
+    marketDataTool,
+    transactionTool,
+    taxTool,
+    complianceTool
+  ];
 
   const agent = createReactAgent({
     llm,

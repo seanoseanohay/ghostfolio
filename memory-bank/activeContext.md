@@ -2,7 +2,7 @@
 
 ## Current Work Focus
 
-Phase 1 complete and deployed. Agent is live on Railway. Next focus: Phase 2 tools.
+Phase 2 complete. All 5 tools implemented and registered. Next focus: Phase 3 (LangSmith tracing, cost tracking, eval dataset, CI gating).
 
 ## Deployment Status (2026-02-24)
 
@@ -11,6 +11,21 @@ Phase 1 complete and deployed. Agent is live on Railway. Next focus: Phase 2 too
 - **Railway services:** API (from Dockerfile), PostgreSQL (addon), Redis Stack (custom Docker image)
 - **Redis Stack fix:** Must use `redis-stack-server` binary in command (not `redis-server`) to load JSON + Search modules
 - **Dockerfile fix:** Use root `package.json` + `npm install --omit=dev --ignore-scripts` instead of Nx-generated package.json, then run `database:generate-typings` explicitly after copying prisma schema
+
+## What Was Implemented (2026-02-24 — Phase 2)
+
+1. **libs/agent/src/schemas/market-data.schema.ts** — Zod input/output schemas for market data tool
+2. **libs/agent/src/tools/market-data.tool.ts** — wraps DataProviderService.getQuotes() + getHistorical(), 3× retry
+3. **libs/agent/src/schemas/transaction-categorize.schema.ts** — Zod schemas for transaction tool
+4. **libs/agent/src/tools/transaction-categorize.tool.ts** — wraps OrderService.getOrders(), groups by type, 3× retry
+5. **libs/agent/src/schemas/tax-estimate.schema.ts** — Zod schemas for tax tool
+6. **libs/agent/src/tools/tax-estimate.tool.ts** — mocked, US-only, with legal disclaimer
+7. **libs/agent/src/schemas/compliance-check.schema.ts** — Zod schemas for compliance tool
+8. **libs/agent/src/tools/compliance-check.tool.ts** — mocked, US-only, 4 check types, with disclaimer
+9. **libs/agent/src/graph/agent.graph.ts** — updated to register all 5 tools + updated system prompt
+10. **apps/api/src/agent/agent.service.ts** — injects DataProviderService + OrderService, passes to graph
+11. **apps/api/src/agent/agent.module.ts** — imports DataProviderModule + OrderModule
+12. **libs/agent/src/index.ts** — exports all new schemas and tools
 
 ## What Was Implemented (2026-02-23 to 2026-02-24)
 
@@ -48,16 +63,13 @@ Phase 1 complete and deployed. Agent is live on Railway. Next focus: Phase 2 too
 - Process-level error handlers added to prevent silent crashes from unhandled Redis EventEmitter errors
 - Controller wraps agent call in try/catch and returns `detail` in 500 responses for debuggability
 
-## Next Steps (Phase 2)
+## Next Steps (Phase 3)
 
-1. Implement `market_data` tool (reuse DataProviderService/MarketDataService)
-2. Implement `transaction_categorize` tool (reuse OrderService)
-3. Add `tax_estimate` and `compliance_check` mocked tools
-4. Implement LangSmith tracing with traceSanitizer integration
-5. Add cost tracking (token usage logging)
-6. Write evaluation dataset (50+ LangSmith cases)
-7. CI evaluation gating
-8. Optional: Angular chat UI component
+1. Implement LangSmith tracing with traceSanitizer integration
+2. Add cost tracking (token usage logging)
+3. Write evaluation dataset (50+ LangSmith cases)
+4. CI evaluation gating
+5. Optional: Angular chat UI component
 
 ## Active Decisions & Considerations
 
