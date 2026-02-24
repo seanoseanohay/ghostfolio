@@ -41,14 +41,15 @@ COPY ./package-lock.json /ghostfolio/dist/apps/api/
 
 RUN npm install
 
-# Copy LangChain/AI packages from builder's node_modules — Nx generatePackageJson
-# does not always detect these through tsconfig path aliases, so we copy explicitly.
-COPY --from=builder /ghostfolio/node_modules/@langchain /ghostfolio/dist/apps/api/node_modules/@langchain/
-COPY --from=builder /ghostfolio/node_modules/langsmith /ghostfolio/dist/apps/api/node_modules/langsmith/
-COPY --from=builder /ghostfolio/node_modules/@anthropic-ai /ghostfolio/dist/apps/api/node_modules/@anthropic-ai/
-COPY --from=builder /ghostfolio/node_modules/zod /ghostfolio/dist/apps/api/node_modules/zod/
-COPY --from=builder /ghostfolio/node_modules/redis /ghostfolio/dist/apps/api/node_modules/redis/
-COPY --from=builder /ghostfolio/node_modules/@redis /ghostfolio/dist/apps/api/node_modules/@redis/
+# Copy LangChain/AI packages from the root node_modules into the dist node_modules.
+# Nx generatePackageJson does not detect these through tsconfig path aliases, so
+# we copy them explicitly. WORKDIR is /ghostfolio/dist/apps/api at this point.
+RUN cp -r /ghostfolio/node_modules/@langchain ./node_modules/ && \
+    cp -r /ghostfolio/node_modules/langsmith ./node_modules/ && \
+    cp -r /ghostfolio/node_modules/@anthropic-ai ./node_modules/ && \
+    cp -r /ghostfolio/node_modules/zod ./node_modules/ && \
+    cp -r /ghostfolio/node_modules/redis ./node_modules/ && \
+    cp -r /ghostfolio/node_modules/@redis ./node_modules/
 
 COPY .config /ghostfolio/dist/apps/api/.config/
 COPY prisma /ghostfolio/dist/apps/api/prisma/
