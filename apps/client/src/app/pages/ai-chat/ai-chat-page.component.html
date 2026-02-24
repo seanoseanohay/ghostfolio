@@ -1,0 +1,221 @@
+<div class="ai-chat-container">
+  <!-- Sidebar: conversation history -->
+  <div class="ai-chat-sidebar" [class.open]="isSidebarOpen">
+    <div class="ai-chat-sidebar-header">
+      <button
+        class="w-100"
+        color="primary"
+        mat-flat-button
+        (click)="onNewChat()"
+      >
+        <span class="align-items-center d-flex justify-content-center">
+          <ion-icon class="mr-2" name="add-outline" />
+          New Chat
+        </span>
+      </button>
+    </div>
+
+    <div class="ai-chat-sidebar-list">
+      @if (conversations.length === 0) {
+        <div class="ai-chat-sidebar-empty">
+          <ion-icon name="chatbubbles-outline" />
+          <p>No past chats</p>
+        </div>
+      }
+
+      @for (conv of conversations; track conv.id) {
+        <button
+          class="ai-chat-sidebar-item"
+          [class.active]="activeConversationId === conv.id"
+          (click)="onSelectConversation(conv.id)"
+        >
+          <ion-icon class="flex-shrink-0 mr-2" name="chatbubble-outline" />
+          <div class="ai-chat-sidebar-item-content">
+            <span class="ai-chat-sidebar-item-title">{{
+              conv.title || 'New conversation'
+            }}</span>
+            <small class="text-muted">{{
+              conv.updatedAt | date: 'MMM d, h:mm a'
+            }}</small>
+          </div>
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Main chat area -->
+  <div class="ai-chat-main">
+    <!-- Mobile sidebar toggle -->
+    <div class="ai-chat-mobile-header d-md-none">
+      <button mat-button (click)="isSidebarOpen = !isSidebarOpen">
+        <ion-icon name="chatbubbles-outline" />
+        <span class="ml-1">History</span>
+      </button>
+    </div>
+
+    <!-- Message list -->
+    <div #messageContainer class="ai-chat-messages">
+      @if (messages.length === 0 && !isLoading) {
+        <div class="ai-chat-empty">
+          <ion-icon class="ai-chat-empty-icon" name="chatbubblesoutline" />
+          <h2>Ghostfolio AI</h2>
+          <p class="text-muted">
+            Ask me anything about your portfolio — performance, holdings,
+            transactions, or financial planning.
+          </p>
+          <div class="ai-chat-suggestions">
+            @for (suggestion of suggestions; track suggestion) {
+              <button
+                class="ai-chat-suggestion"
+                mat-stroked-button
+                (click)="onSuggestionClick(suggestion)"
+              >
+                {{ suggestion }}
+              </button>
+            }
+          </div>
+        </div>
+      }
+
+      @for (message of messages; track message.timestamp) {
+        <div
+          class="ai-chat-message"
+          [class.assistant]="message.role === 'assistant'"
+          [class.user]="message.role === 'user'"
+        >
+          <div class="ai-chat-bubble">
+            @if (message.isLoading) {
+              <div class="ai-chat-typing">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            } @else {
+              <div class="ai-chat-bubble-text">{{ message.content }}</div>
+
+              @if (message.role === 'assistant' && message.metadata) {
+                <div class="ai-chat-debug">
+                  <button
+                    class="ai-chat-debug-toggle"
+                    (click)="toggleDetails(message)"
+                  >
+                    <ion-icon name="information-circle-outline" />
+                    <span>Details</span>
+                    <span
+                      class="confidence-badge"
+                      [class]="
+                        'confidence-badge--' +
+                        getConfidenceClass(message.metadata.confidence)
+                      "
+                    >
+                      {{ (message.metadata.confidence * 100).toFixed(0) }}%
+                      confidence
+                    </span>
+                  </button>
+
+                  @if (message.showDetails) {
+                    <div class="ai-chat-debug-panel">
+                      @if (message.metadata.toolCalls?.length > 0) {
+                        <div class="ai-chat-debug-section">
+                          <small class="text-muted">Tools used</small>
+                          <div class="ai-chat-tool-calls">
+                            @for (
+                              tool of message.metadata.toolCalls;
+                              track tool.name
+                            ) {
+                              <span
+                                class="tool-badge"
+                                [class.error]="!tool.success"
+                                [class.success]="tool.success"
+                              >
+                                {{ tool.name }}
+                                <span class="tool-duration"
+                                  >{{ tool.durationMs }}ms</span
+                                >
+                              </span>
+                            }
+                          </div>
+                        </div>
+                      }
+
+                      @if (message.metadata.tokenUsage) {
+                        <div class="ai-chat-debug-section">
+                          <small class="text-muted">Token usage</small>
+                          <div class="ai-chat-token-info">
+                            <span
+                              >{{
+                                message.metadata.tokenUsage.totalTokens
+                              }}
+                              tokens</span
+                            >
+                            <span class="text-muted mx-1">·</span>
+                            <span
+                              >${{
+                                message.metadata.tokenUsage.estimatedCostUsd.toFixed(
+                                  6
+                                )
+                              }}</span
+                            >
+                          </div>
+                        </div>
+                      }
+
+                      @if (message.metadata.warnings?.length > 0) {
+                        <div class="ai-chat-debug-section">
+                          @for (
+                            warning of message.metadata.warnings;
+                            track warning
+                          ) {
+                            <div class="ai-chat-warning">
+                              <small>⚠ {{ warning }}</small>
+                            </div>
+                          }
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            }
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Input area -->
+    <div class="ai-chat-input">
+      <form class="ai-chat-input-form" (ngSubmit)="onSend()">
+        <mat-form-field appearance="outline" class="ai-chat-textarea-field">
+          <textarea
+            cdkAutosizeMaxRows="5"
+            cdkAutosizeMinRows="1"
+            cdkTextareaAutosize
+            matInput
+            name="query"
+            placeholder="Ask about your portfolio… (Enter to send, Shift+Enter for newline)"
+            [disabled]="isLoading"
+            [(ngModel)]="query"
+            (keydown.enter)="onEnterKey($event)"
+          ></textarea>
+        </mat-form-field>
+
+        <button
+          class="ai-chat-send-btn"
+          color="primary"
+          mat-fab
+          type="submit"
+          [disabled]="!query.trim() || isLoading"
+        >
+          @if (isLoading) {
+            <mat-progress-spinner
+              diameter="24"
+              mode="indeterminate"
+            ></mat-progress-spinner>
+          } @else {
+            <ion-icon name="send-outline" />
+          }
+        </button>
+      </form>
+    </div>
+  </div>
+</div>

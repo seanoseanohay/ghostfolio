@@ -1,6 +1,6 @@
 # Progress
 
-## What Works (Phases 1 & 2 Complete + Deployed + Live-Verified)
+## What Works (Phases 1–5 Complete + Deployed + Live-Verified)
 
 - ✅ AgentModule registered in AppModule
 - ✅ POST /api/v1/agent/chat endpoint (JWT-protected)
@@ -14,6 +14,9 @@
 - ✅ Multi-tool chaining verified live (agent autonomously called portfolio_analysis + market_data in one response)
 - ✅ Confidence scoring (tool success 40% + verification 40% + LLM 20%)
 - ✅ traceSanitizer() for PII redaction in traces
+- ✅ Angular chat GUI at /ai-chat with history sidebar + debug drawer
+- ✅ AgentConversation Prisma model persists full message history
+- ✅ GET /agent/conversations + GET /agent/conversations/:id endpoints
 - ✅ TypeScript compiles cleanly (0 errors)
 - ✅ Memory bank documentation complete
 - ✅ Deployed to Railway — live at https://ghostfolio-production-1e9f.up.railway.app
@@ -36,16 +39,19 @@
 - [x] ~~Railway deployment~~ live
 - [x] ~~ANTHROPIC_API_KEY in .env~~ done
 
-### Phase 5 — Optional
+### Phase 5 — GUI
 
-- [ ] Angular chat UI component
+- [x] ~~Angular chat UI~~ done — two-panel page at `/ai-chat` with history sidebar, message bubbles, debug drawer
+- [x] ~~Conversation persistence~~ done — `AgentConversation` Prisma model stores full message history as JSON
+- [x] ~~Past chats viewable~~ done — `GET /agent/conversations` + `GET /agent/conversations/:id` endpoints
+- [x] ~~Nav link~~ done — "AI Chat" added to header (desktop + mobile)
 
 ## Known Issues / Limitations
 
 1. `baseCurrency` in portfolio_analysis + transaction_categorize is hardcoded to 'USD' — should come from user settings
 2. Redis checkpointer singleton will not reconnect if Redis disconnects mid-session
 3. No unit tests written yet
-4. Agent UI only accessible via API (no Angular frontend yet)
+4. ~~Agent UI only accessible via API~~ — Angular chat UI now at `/ai-chat`
 5. market_data tool returned no quote for AAPL in live test — DataProviderService on Railway likely missing data source config (DATA_SOURCES env var or Yahoo Finance connectivity); not a code bug
 
 ## PRD Compliance Status

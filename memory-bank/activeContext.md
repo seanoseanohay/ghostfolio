@@ -2,7 +2,7 @@
 
 ## Current Work Focus
 
-Phases 1–3 complete. MVP hard gate requirements all satisfied. Next: deploy Phase 3 changes to Railway and run live evals.
+Phases 1–5 complete. All MVP hard gate requirements satisfied. Phase 5 Angular chat GUI shipped. Next: deploy to Railway, run live evals, optionally set `LANGSMITH_API_KEY` in Railway env vars.
 
 ## Deployment Status (2026-02-24)
 
@@ -63,12 +63,28 @@ Phases 1–3 complete. MVP hard gate requirements all satisfied. Next: deploy Ph
 - Process-level error handlers added to prevent silent crashes from unhandled Redis EventEmitter errors
 - Controller wraps agent call in try/catch and returns `detail` in 500 responses for debuggability
 
+## What Was Implemented (2026-02-24 — Phase 5 GUI)
+
+1. **prisma/schema.prisma** — Added `AgentConversation` model (id, title, messages JSON, userId relation, timestamps)
+2. **prisma/migrations/20260224000001_added_agent_conversation/migration.sql** — SQL migration for the new table
+3. **apps/api/src/agent/agent.module.ts** — Added `PrismaModule` import for DB access
+4. **apps/api/src/agent/agent.service.ts** — Full rewrite: persists messages (user + assistant) to `AgentConversation`, auto-generates title from first query, TTL-based cleanup on list fetch, `getConversations()`, `getConversation()` methods
+5. **apps/api/src/agent/agent.controller.ts** — Added `GET /agent/conversations` and `GET /agent/conversations/:id` endpoints (both JWT-protected)
+6. **libs/common/src/lib/routes/routes.ts** — Added `aiChat` entry to `internalRoutes` (`/ai-chat`)
+7. **apps/client/src/app/app.routes.ts** — Added lazy-loaded route for `/ai-chat` → `GfAiChatPageComponent`
+8. **apps/client/src/app/services/agent/agent.service.ts** — Angular `AgentClientService` with `chat()`, `getConversations()`, `getConversation()` using `HttpClient`
+9. **apps/client/src/app/pages/ai-chat/ai-chat-page.component.ts** — Standalone Angular component: conversation state, send/receive, load past chats, suggestion clicks, auto-scroll
+10. **apps/client/src/app/pages/ai-chat/ai-chat-page.component.html** — Two-panel layout: history sidebar + chat area with typing indicator, debug drawer (confidence, tool calls, token usage, warnings), suggestion chips on empty state
+11. **apps/client/src/app/pages/ai-chat/ai-chat-page.component.scss** — Full styling: responsive sidebar (hidden on mobile, toggled), message bubbles (user right/blue, assistant left/gray), debug drawer, confidence badges, tool badges, typing animation
+12. **apps/client/src/app/components/header/header.component.ts** — Added `routerLinkAiChat`
+13. **apps/client/src/app/components/header/header.component.html** — Added "AI Chat" nav link (desktop + mobile hamburger menu)
+
 ## Next Steps
 
-1. Deploy Phase 3 changes to Railway (git push → Railway auto-deploys)
-2. Set `LANGSMITH_API_KEY` and `LANGSMITH_TRACING_ENABLED=true` in Railway env vars
+1. Deploy to Railway (git push → Railway auto-deploys; Prisma will run new migration via `prisma migrate deploy` on startup)
+2. Set `LANGSMITH_API_KEY` and `LANGSMITH_TRACING_ENABLED=true` in Railway env vars (if tracing desired)
 3. Run live evals: `npm run agent:eval:live -- --endpoint https://ghostfolio-production-1e9f.up.railway.app --token <JWT>`
-4. Optional: Angular chat UI component
+4. (Optional) Add mobile bottom sheet for conversation history on small screens
 
 ## Live Verification Result (2026-02-24)
 

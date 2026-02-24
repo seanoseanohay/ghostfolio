@@ -1,6 +1,7 @@
 import { OrderModule } from '@ghostfolio/api/app/order/order.module';
 import { PortfolioModule } from '@ghostfolio/api/app/portfolio/portfolio.module';
 import { DataProviderModule } from '@ghostfolio/api/services/data-provider/data-provider.module';
+import { PrismaModule } from '@ghostfolio/api/services/prisma/prisma.module';
 
 import { Module } from '@nestjs/common';
 
@@ -9,7 +10,7 @@ import { AgentService } from './agent.service';
 
 @Module({
   controllers: [AgentController],
-  imports: [DataProviderModule, OrderModule, PortfolioModule],
+  imports: [DataProviderModule, OrderModule, PortfolioModule, PrismaModule],
   providers: [AgentService]
 })
 export class AgentModule {}

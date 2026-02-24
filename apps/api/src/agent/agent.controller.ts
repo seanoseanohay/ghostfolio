@@ -3,9 +3,11 @@ import { RequestWithUser } from '@ghostfolio/common/types';
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpException,
   HttpStatus,
+  Param,
   Post,
   Req,
   UseGuards
@@ -37,6 +39,31 @@ export class AgentController {
           detail: (error as Error).message
         },
         HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Get('conversations')
+  @UseGuards(AuthGuard('jwt'))
+  public async getConversations(@Req() req: RequestWithUser) {
+    return this.agentService.getConversations(req.user.id);
+  }
+
+  @Get('conversations/:id')
+  @UseGuards(AuthGuard('jwt'))
+  public async getConversation(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string
+  ) {
+    try {
+      return await this.agentService.getConversation(req.user.id, id);
+    } catch (error) {
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'Conversation not found'
+        },
+        HttpStatus.NOT_FOUND
       );
     }
   }
