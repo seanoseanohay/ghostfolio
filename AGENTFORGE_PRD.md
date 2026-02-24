@@ -19,7 +19,7 @@ Date: February 23, 2026 Observability & Evaluation: LangSmith (Primary)
 ## Final Stack Decisions
 
 - **Backend:** NestJS (existing) + LangGraph.js + LangChain.js
-- **LLM:** Claude 4.5 Sonnet (via @langchain/anthropic)
+- **LLM:** Tiered — Claude 3 Haiku (router + simple lookups) / Claude Sonnet 4.5 (complex analysis) via @langchain/anthropic
 - **Observability & Evals:** LangSmith (primary)
 - **DB/ORM:** Prisma + PostgreSQL (existing)
 - **State Persistence:** Redis (existing; namespaced for agent)
@@ -352,7 +352,30 @@ CI gating: - \<80% pass → fail merge - \>5% hallucination → fail merge
 
 Track: - Tokens per request - Cost per request - Dev total spend
 
+**Tiered Model Strategy (implemented 2026-02-24):**
+
+Every request passes through a lightweight Haiku router call (~$0.0001) before
+the main ReAct loop. The router classifies query complexity and selects tools:
+
+- Simple (single-tool lookup, e.g. "price of AAPL?") → Haiku ReAct loop + filtered tools (~$0.001/query)
+- Complex (multi-tool, reasoning, analysis) → Sonnet ReAct loop + relevant tools (~$0.015–0.025/query)
+
+Rule-based keyword escalation (e.g. "should I", "compare", "rebalance") forces
+Sonnet regardless of the router's classification, ensuring financial reasoning
+queries always get the more capable model.
+
+`tokenUsage` in every response includes `modelUsed` and `complexity` fields for
+per-request cost attribution and long-term spend analysis.
+
 Projection required at: - 100 users - 1k users - 10k users - 100k users
+
+**Projected cost per 1k queries (mix: 70% simple, 30% complex):**
+
+| Scenario     | Before (Sonnet only) | After (tiered) | Savings |
+| ------------ | -------------------- | -------------- | ------- |
+| 1k queries   | ~$15                 | ~$1.20         | ~92%    |
+| 10k queries  | ~$150                | ~$12           | ~92%    |
+| 100k queries | ~$1,500              | ~$120          | ~92%    |
 
 ---
 

@@ -11,7 +11,7 @@
 
 ## New Agent Dependencies (added 2026-02-23)
 
-- `@langchain/anthropic` — Claude Sonnet 4.5
+- `@langchain/anthropic` — Claude 3 Haiku (router + simple) and Claude Sonnet 4.5 (complex)
 - `@langchain/core` — base LangChain types
 - `@langchain/langgraph` v1.1.5 — agent orchestration
 - `@langchain/langgraph-checkpoint-redis` — Redis checkpointer (uses `redis` npm package)

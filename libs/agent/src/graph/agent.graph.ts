@@ -23,6 +23,15 @@ import {
   verifyPortfolioAnalysis
 } from '../verifiers/portfolio-analysis.verifier';
 import { traceSanitizer } from '../verifiers/trace-sanitizer';
+import {
+  HAIKU_INPUT_COST_PER_M,
+  HAIKU_MODEL,
+  HAIKU_OUTPUT_COST_PER_M,
+  SONNET_INPUT_COST_PER_M,
+  SONNET_MODEL,
+  SONNET_OUTPUT_COST_PER_M,
+  routeQuery
+} from './query-router';
 
 // Map Ghostfolio env vars → LangChain SDK env vars at module load
 // LangChain reads LANGCHAIN_TRACING_V2 + LANGCHAIN_API_KEY + LANGCHAIN_PROJECT
@@ -35,10 +44,6 @@ if (process.env.LANGSMITH_TRACING_ENABLED === 'true') {
     process.env.LANGCHAIN_PROJECT = 'ghostfolio-agent';
   }
 }
-
-// Claude Sonnet pricing (USD per 1M tokens) — update if pricing changes
-const CLAUDE_INPUT_COST_PER_M = 3.0;
-const CLAUDE_OUTPUT_COST_PER_M = 15.0;
 
 export interface AgentGraphConfig {
   redisUrl: string;
@@ -65,6 +70,10 @@ export interface TokenUsage {
   outputTokens: number;
   totalTokens: number;
   estimatedCostUsd: number;
+  /** Which model handled the main ReAct loop for this request */
+  modelUsed: string;
+  /** Complexity tier determined by the router */
+  complexity: 'simple' | 'complex';
 }
 
 export interface AgentRunResult {
@@ -179,25 +188,46 @@ export async function runAgentGraph(
     config.memoryTtlDays
   );
 
+  // Step 1: Route the query.
+  // A lightweight Haiku call classifies which tools are needed and whether the
+  // query is simple (single-tool lookup) or complex (multi-tool / analytical).
+  // This costs ~$0.0001 and determines which model handles the ReAct loop.
+  // On any router error, falls back safely to all tools + Sonnet.
+  const routerResult = await routeQuery(query);
+  const isSimple = routerResult.complexity === 'simple';
+
+  // Step 2: Pick model and pricing based on complexity tier.
+  const modelName = isSimple ? HAIKU_MODEL : SONNET_MODEL;
+  const agentInputCostPerM = isSimple
+    ? HAIKU_INPUT_COST_PER_M
+    : SONNET_INPUT_COST_PER_M;
+  const agentOutputCostPerM = isSimple
+    ? HAIKU_OUTPUT_COST_PER_M
+    : SONNET_OUTPUT_COST_PER_M;
+
+  // Simple queries cap output at 1024 tokens — direct lookups never need 4096.
   const llm = new ChatAnthropic({
-    model: 'claude-sonnet-4-5',
+    model: modelName,
     temperature: 0,
-    maxTokens: 4096
+    maxTokens: isSimple ? 1024 : 4096
   });
 
-  const portfolioTool = createPortfolioAnalysisTool(portfolioService, userId);
-  const marketDataTool = createMarketDataTool(dataProviderService);
-  const transactionTool = createTransactionCategorizeTool(orderService, userId);
-  const taxTool = createTaxEstimateTool();
-  const complianceTool = createComplianceCheckTool();
+  // Step 3: Build all tools, then filter to only the ones the router identified.
+  // Sending fewer tool schemas to the LLM reduces token overhead on every call.
+  const allToolMap: Record<string, DynamicStructuredTool> = {
+    portfolio_analysis: createPortfolioAnalysisTool(portfolioService, userId),
+    market_data: createMarketDataTool(dataProviderService),
+    transaction_categorize: createTransactionCategorizeTool(
+      orderService,
+      userId
+    ),
+    tax_estimate: createTaxEstimateTool(),
+    compliance_check: createComplianceCheckTool()
+  };
 
-  const tools: DynamicStructuredTool[] = [
-    portfolioTool,
-    marketDataTool,
-    transactionTool,
-    taxTool,
-    complianceTool
-  ];
+  const tools: DynamicStructuredTool[] = routerResult.tools
+    .map((name) => allToolMap[name])
+    .filter((t): t is DynamicStructuredTool => t !== undefined);
 
   const agent = createReactAgent({
     llm,
@@ -322,16 +352,29 @@ export async function runAgentGraph(
     }
   }
 
-  const totalTokens = totalInputTokens + totalOutputTokens;
-  const estimatedCostUsd =
-    (totalInputTokens / 1_000_000) * CLAUDE_INPUT_COST_PER_M +
-    (totalOutputTokens / 1_000_000) * CLAUDE_OUTPUT_COST_PER_M;
+  // Cost accounting: router (always Haiku) + agent (Haiku or Sonnet) billed separately
+  // because they run at different per-token rates. Both are included in reported totals.
+  const routerCostUsd =
+    (routerResult.routerInputTokens / 1_000_000) * HAIKU_INPUT_COST_PER_M +
+    (routerResult.routerOutputTokens / 1_000_000) * HAIKU_OUTPUT_COST_PER_M;
+
+  const agentCostUsd =
+    (totalInputTokens / 1_000_000) * agentInputCostPerM +
+    (totalOutputTokens / 1_000_000) * agentOutputCostPerM;
+
+  const estimatedCostUsd = routerCostUsd + agentCostUsd;
+
+  const reportedInputTokens = totalInputTokens + routerResult.routerInputTokens;
+  const reportedOutputTokens =
+    totalOutputTokens + routerResult.routerOutputTokens;
 
   const tokenUsage: TokenUsage = {
-    inputTokens: totalInputTokens,
-    outputTokens: totalOutputTokens,
-    totalTokens,
-    estimatedCostUsd: Math.round(estimatedCostUsd * 1_000_000) / 1_000_000
+    inputTokens: reportedInputTokens,
+    outputTokens: reportedOutputTokens,
+    totalTokens: reportedInputTokens + reportedOutputTokens,
+    estimatedCostUsd: Math.round(estimatedCostUsd * 1_000_000) / 1_000_000,
+    modelUsed: modelName,
+    complexity: routerResult.complexity
   };
 
   return {

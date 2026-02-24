@@ -19,18 +19,47 @@ AgentService (apps/api/src/agent/agent.service.ts)
     ▼
 runAgentGraph() (libs/agent/src/graph/agent.graph.ts)
   Creates RedisSaver checkpointer (singleton, shared across requests)
-  Creates ChatAnthropic (claude-sonnet-4-5)
-  Creates 5 tool instances bound to (service, userId) via closure
-  Calls createReactAgent({ llm, tools, checkpointSaver })
+  ┌─────────────────────────────────────────────────┐
+  │  Step 1: routeQuery() — query-router.ts          │
+  │  Haiku call (~$0.0001): classifies query         │
+  │  Returns { tools[], complexity, tokenCounts }    │
+  │  Falls back to all tools + Sonnet on any error   │
+  └─────────────────────────────────────────────────┘
+    │
+    ├── complexity=simple → ChatAnthropic(claude-3-haiku), maxTokens=1024
+    └── complexity=complex → ChatAnthropic(claude-sonnet-4-5), maxTokens=4096
+    │
+  Filters tool registry to only router-selected tools
+  Calls createReactAgent({ llm, selectedTools, checkpointSaver })
   Invokes agent with thread_id config
   Parses tool calls and tool outputs from message history
   Runs verifiers on portfolio_analysis tool outputs
   Calculates confidence score
-  Returns AgentRunResult
+  Returns AgentRunResult (includes modelUsed + complexity in tokenUsage)
     │
     ▼
-HTTP Response: { message, toolCalls, citations, confidence, warnings, newConversationId }
+HTTP Response: { message, toolCalls, citations, confidence, warnings, tokenUsage, newConversationId }
 ```
+
+## Tiered Model Selection (query-router.ts)
+
+Two-tier routing introduced 2026-02-24 to control LLM costs:
+
+| Tier    | Model                   | Input $/M | Output $/M | Use case                             |
+| ------- | ----------------------- | --------- | ---------- | ------------------------------------ |
+| Simple  | claude-3-haiku-20240307 | $0.25     | $1.25      | Single-tool lookups (price, balance) |
+| Complex | claude-sonnet-4-5       | $3.00     | $15.00     | Multi-tool, reasoning, analysis      |
+
+**Router logic:**
+
+1. Haiku call with tool catalog (names + one-liners only, not full schemas) → JSON `{ tools, complexity }`
+2. Rule-based keyword overrides: "should i", "compare", "rebalance" etc. force `complex`
+3. More than 1 tool selected → force `complex`
+4. Any router failure → safe fallback: all tools + Sonnet
+
+**Why classification is safe for Haiku:**
+Routing is text classification (not financial reasoning). The failure mode is
+over-spending (falls back to Sonnet), never under-quality (wrong financial answer).
 
 ## Tool Pattern
 

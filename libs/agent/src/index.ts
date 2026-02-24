@@ -1,5 +1,6 @@
 export * from './evals/evaluators';
 export * from './graph/agent.graph';
+export * from './graph/query-router';
 export * from './schemas/compliance-check.schema';
 export * from './schemas/market-data.schema';
 export * from './schemas/portfolio-analysis.schema';

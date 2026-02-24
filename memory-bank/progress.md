@@ -47,6 +47,15 @@
 - [x] ~~Past chats viewable~~ done — `GET /agent/conversations` + `GET /agent/conversations/:id` endpoints
 - [x] ~~Nav link~~ done — "AI Chat" added to header (desktop + mobile)
 
+## What Works (Tiered Routing — 2026-02-24)
+
+- ✅ `libs/agent/src/graph/query-router.ts` — Haiku router: classifies query complexity, selects relevant tools, returns token counts for cost accounting
+- ✅ `runAgentGraph` uses router result to select Haiku (simple) or Sonnet (complex) and filters tool schemas sent to the LLM
+- ✅ `TokenUsage` response includes `modelUsed` and `complexity` per request
+- ✅ Cost calculation correctly attributes router (Haiku) + agent (Haiku or Sonnet) at different rates
+- ✅ Safe fallback: router failure → all tools + Sonnet (never degrades quality)
+- ✅ Rule-based keyword escalation prevents Haiku from handling financial reasoning queries
+
 ## Known Issues / Limitations
 
 1. `baseCurrency` in portfolio_analysis + transaction_categorize is hardcoded to 'USD' — should come from user settings

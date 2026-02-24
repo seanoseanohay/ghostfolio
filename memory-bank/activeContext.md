@@ -2,7 +2,8 @@
 
 ## Current Work Focus
 
-Phases 1–5 complete. LangSmith tracing live. Focus: production polish — fix market data on Railway (DATA_SOURCES), baseCurrency from user settings, AI chat UI theming.
+Phases 1–5 complete. LangSmith tracing live. Tiered model routing implemented (2026-02-24).
+Focus: production polish — fix market data on Railway (DATA_SOURCES), baseCurrency from user settings, AI chat UI theming.
 
 ## Deployment Status (2026-02-24)
 
@@ -80,12 +81,29 @@ Phases 1–5 complete. LangSmith tracing live. Focus: production polish — fix 
 12. **apps/client/src/app/components/header/header.component.ts** — Added `routerLinkAiChat`
 13. **apps/client/src/app/components/header/header.component.html** — Added "AI Chat" nav link (desktop + mobile hamburger menu)
 
+## What Was Implemented (2026-02-24 — Tiered Model Routing)
+
+1. **libs/agent/src/graph/query-router.ts** — New file. Haiku-powered router:
+   - Sends only tool names + one-liners (not full schemas) → ~150 input tokens vs ~1,000
+   - Returns `{ tools[], complexity, routerInputTokens, routerOutputTokens }`
+   - Rule-based keyword escalation for financial reasoning queries
+   - Safe fallback: any error → all tools + Sonnet
+2. **libs/agent/src/graph/agent.graph.ts** — Updated:
+   - Removed hard-coded CLAUDE_INPUT/OUTPUT_COST_PER_M constants (moved to query-router)
+   - Calls `routeQuery()` first, picks Haiku vs Sonnet based on result
+   - Filters tool registry to router-selected tools only
+   - `TokenUsage` now includes `modelUsed` and `complexity` fields
+   - Cost calculation sums router (Haiku) + agent (Haiku or Sonnet) separately
+3. **libs/agent/src/index.ts** — Added export for `./graph/query-router`
+4. **AGENTFORGE_PRD.md** — Updated Section 1 (LLM choice) and Section 11 (cost projections)
+
 ## Next Steps
 
 1. Fix market data on Railway — configure DATA_SOURCES (include YAHOO) so market_data returns quotes
 2. baseCurrency from user settings — remove hardcoded 'USD' in portfolio_analysis + transaction_categorize
 3. AI chat UI theming — use Ghostfolio theme variables for dark/light mode
 4. Run live evals: `npm run agent:eval:live -- --endpoint https://ghostfolio-production-1e9f.up.railway.app --token <JWT>`
+5. Deploy to Railway — push tiered routing changes so production benefits from cost reduction
 
 ## Live Verification Result (2026-02-24)
 
