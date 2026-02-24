@@ -40,7 +40,7 @@ WORKDIR /ghostfolio/dist/apps/api
 COPY ./package.json /ghostfolio/dist/apps/api/
 COPY ./package-lock.json /ghostfolio/dist/apps/api/
 
-RUN npm install --omit=dev
+RUN npm install --omit=dev --ignore-scripts
 
 COPY .config /ghostfolio/dist/apps/api/.config/
 COPY prisma /ghostfolio/dist/apps/api/prisma/
